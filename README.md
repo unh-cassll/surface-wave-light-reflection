@@ -21,13 +21,27 @@ The code has not been optimized to run efficiently via GPU acceleration.
 
 ## Part 1: simulation of a surface wave field via random phase approach
 
+Following the approach laid out by
+
 Tessendorf, J. (2001)
 "Simulating ocean water"
 Simulating nature: realistic and interactive techniques.
 SIGGRAPH, 1(2), 5.
 
+I used the wavenumber-directional spectrum of
+
+Elfouhaily, T., Chapron, B., Katsaros, K., & Vandemark, D. (1997)
+"A unified directional spectrum for long and short wind‐driven waves"
+Journal of Geophysical Research: Oceans, 102(C7), 15781-15796.
+
 ## Part 2: modeling of polarized light reflected off that surface
+
+I followed the general framework of
 
 Mobley, C. D. (2015)
 "Polarized reflectance and transmittance properties of windblown sea surfaces"
 Applied optics, 54(15), 4828-4849.
+
+But did not flesh out the sky-leaving radiance bits.
+
+In order to get a better handle on the relationship between the surface normal vector **n** and the vectors **h** and **s** computed through Mobley's framework, I wrote a Live Script (*surface_reflection_demonstration.mlx*) that lets you tinker with surface slope and camera incidence/azimuth angle and examine the resulting vector orientations.
