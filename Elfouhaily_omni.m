@@ -1,7 +1,7 @@
 % Computes unified omnidirectional wavenumber spectrum
 % Elfouhaily et al. (1997)
 %
-% Coded by N. Laxague between 2013-2021
+% Coded by N. Laxague between 2013-2024
 %
 function [out_K,out_S] = Elfouhaily_omni(U10,min_k,max_k,num_k,fetch_m)
 
@@ -38,6 +38,7 @@ ang_fp = sqrt(g*kp);                                % peak angular frequency
 cp = ang_fp./kp;                                     % phase speed at peak wavenumber
 omega = U10./cp;                                     % inverse wave age
 gamma = 1.7;                                        % JONSWAP parameter
+% gamma(omega_c>1) = 1.7 + 6*log10(omega_c(omega_c>1));
 alpha_p = 0.006*omega_c.^0.55;
 sigma = 0.08*(1+4*omega_c.^-3);
 
@@ -49,27 +50,25 @@ Fp = Lpm.*Jp.*exp(-omega/sqrt(10).*(sqrt(k./kp)-1));  % Long wave side effect fu
 Bl = 0.5*alpha_p.*cp./c.*Fp;
 
 % Short wave portion
-if u_star < cm
-    alpha_m = 1 + log(u_star/cm);
-else
-    alpha_m = 1 + 3*log(u_star/cm);
-end
+alpha_m = 1 + log(u_star/cm);
+alpha_m(u_star>cm) = 1 + 3*log(u_star(u_star>cm)/cm);
 alpha_m = alpha_m*10^-2;
 Fm = exp(-1/4*(k/km-1).^2);
 Bh = 0.5*alpha_m.*cm./c.*Fm;
+
+% Trim off short wave contribution for low wavenumbers
+B_rat = Bl./Bh;
+B_rat(k>100,:) = NaN;
+Bl(k>2e3,:) = 0;
+for n = 1:length(U10)
+    ind = find(B_rat(:,n) > 0.9*max(B_rat(:,n),[],'all','omitnan'),1,'first');
+    Bh_val = Bh(ind,n);
+    Bh(1:ind,n) = exp(-0.5*(k(ind)./k(1:ind)).^2).*Bh(1:ind,n);
+    Bh(1:ind,n) = Bh(1:ind,n)*Bh_val/Bh(ind,n);
+end
 
 % Combine portions of spectra
 S = k.^-3.*(Bl+Bh);
 
 out_K = k;
 out_S = S;
-
-for n = 1:length(U10)
-
-ind = find(Bl(:,n) == max(Bl(:,n)),1,'first');
-
-out_S(:,n) = [k(1:ind).^-3.*Bl(1:ind,n)+S(ind,n)-k(ind).^-3.*Bl(ind,n); S(ind+1:end,n)];
-
-end
-
-
