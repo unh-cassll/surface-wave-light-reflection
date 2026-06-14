@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "seapol"
+version = "0.2.0"
+description = "Sea-surface wave simulation and polarized light reflection modeling"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "GPL-3.0-or-later" }
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "threadpoolctl>=3",
+]
+
+[project.optional-dependencies]
+demos = ["matplotlib>=3.7"]
+asit = ["netCDF4>=1.6"]
+gpu = ["torch>=2.2"]
+
+[dependency-groups]
+# synced by default by uv: everything needed for tests and demos
+dev = ["pytest>=7.0", "matplotlib>=3.7", "netCDF4>=1.6"]
+
+[tool.setuptools.packages.find]
+include = ["seapol*"]

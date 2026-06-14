@@ -1,0 +1,13 @@
+# environments and build artifacts
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+
+# demo outputs (figures, logs, cached tables/libraries)
+demos/output/
+
+# local tool state and historical prototypes (not part of the release)
+.claude/
+_bucket/

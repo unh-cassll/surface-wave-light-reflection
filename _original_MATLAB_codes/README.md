@@ -5,6 +5,8 @@ Code to simulate ocean surface wave fields and to model the light reflected from
 
 Much of this exists---in more complete and well-featured forms---elsewhere, but I wanted to try my own MATLAB implementation.
 
+These MATLAB codes are the original implementation that seeded the project. The maintained Python implementation (`seapol`) now lives at the repository root: same physics lineage (Elfouhaily spectrum, Tessendorf-style FFT synthesis with time evolution, Mobley 2015 polarized reflection), plus a Rayleigh polarized-sky model, two single-bounce renderers, a vectorized forward Monte Carlo tracer with Mueller-matrix path accumulation, and Fedorov-Melville parasitic capillary physics. See the [root README](../README.md) for details and validation.
+
 ### How to use
 
 Call _produce_simulated_sea_surface_modeled_reflection.m_ with wind speed and spatial/temporal parameters (grid size, spatial resolution, temporal sampling interval, number of frames desired). Then make yourself a snack and wait
