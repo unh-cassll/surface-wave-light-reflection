@@ -38,7 +38,7 @@ from seapol.surface import generate_sea_surface
 
 OUT = Path(__file__).parent / "output"
 VIDEOS = OUT / "videos"
-EPSS = Path("/mnt/DATA/Dropbox/Professional/Github/E-PSS_paper/_data")
+EPSS = Path("/home/nathanlaxague/Dropbox/Professional/Github/E-PSS_paper/_data")
 STATS = EPSS / "ASIT2019_wave_spectra_stats_timeseries_empirical_gain.nc"
 ENV = EPSS / "ASIT2019_supporting_environmental_observations.nc"
 

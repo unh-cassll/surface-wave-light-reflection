@@ -19,7 +19,7 @@ from seapol.spectrum import angular_frequency
 
 RAW = Path("/mnt/DATA/raw_ASIT2019_spectra")
 CUBE = RAW / "ASIT_day009_2019_10_15_20_00_00_full_mean_dirspect.nc"
-ENV = Path("/mnt/DATA/Dropbox/Professional/Github/E-PSS_paper/_data/"
+ENV = Path("/home/nathanlaxague/Dropbox/Professional/Github/E-PSS_paper/_data/"
            "ASIT2019_supporting_environmental_observations.nc")
 OUT = Path(__file__).parent / "output"
 F_STRIDE = 3

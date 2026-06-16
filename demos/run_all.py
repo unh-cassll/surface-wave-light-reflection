@@ -24,7 +24,7 @@ OUT = HERE / "output"
 LOGS = OUT / "logs"
 
 TABLE = OUT / "fm98_table_deep.npz"
-EPSS = Path("/mnt/DATA/Dropbox/Professional/Github/E-PSS_paper/_data")
+EPSS = Path("/home/nathanlaxague/Dropbox/Professional/Github/E-PSS_paper/_data")
 STATS = EPSS / "ASIT2019_wave_spectra_stats_timeseries_empirical_gain.nc"
 ENV = EPSS / "ASIT2019_supporting_environmental_observations.nc"
 RAW = Path("/mnt/DATA/raw_ASIT2019_spectra")

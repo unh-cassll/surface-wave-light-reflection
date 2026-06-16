@@ -7,7 +7,7 @@ import pytest
 
 from seapol import generate_hybrid_surface, generate_sea_surface
 
-DATA = Path("/mnt/DATA/Dropbox/Professional/Github/E-PSS_paper/_data")
+DATA = Path("/home/nathanlaxague/Dropbox/Professional/Github/E-PSS_paper/_data")
 STATS = DATA / "ASIT2019_wave_spectra_stats_timeseries_empirical_gain.nc"
 ENV = DATA / "ASIT2019_supporting_environmental_observations.nc"
 LIB = Path(__file__).parent.parent / "demos/output/asit_beta_library"

@@ -16,7 +16,7 @@ from seapol import (bound_fraction_for_wind, run_conditions,
 
 LIB = Path(__file__).parent / "output" / "asit_beta_library"
 OUT = Path(__file__).parent / "output"
-DATA = Path("/mnt/DATA/Dropbox/Professional/Github/E-PSS_paper/_data")
+DATA = Path("/home/nathanlaxague/Dropbox/Professional/Github/E-PSS_paper/_data")
 STATS = DATA / "ASIT2019_wave_spectra_stats_timeseries_empirical_gain.nc"
 ENV = DATA / "ASIT2019_supporting_environmental_observations.nc"
 
