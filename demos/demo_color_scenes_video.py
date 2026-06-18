@@ -10,10 +10,16 @@ A 2 x 3 grid of 30 fps RGB panels (450/550/650 nm bands -> sRGB):
 
 One surface is synthesized and evolved under free dispersion; each frame
 is rendered through every scene's per-band upwelling tables (cached from
-demo_color_scenes; built here if missing).  Default 60 s.
+demo_color_scenes; built here if missing).  Default 10 s.
+
+Wind speed is set with --u10 (sets the surface roughness only; the sky/
+water tables are wind-independent and shared), so a low- and a moderate-
+high-wind pair can reuse the same cached tables, e.g.:
+    demo_color_scenes_video.py --u10 3      # calm
+    demo_color_scenes_video.py --u10 11     # rough
 
 Frames are piped to ffmpeg (libx264).  Runs on the GPU when available.
-Output: output/videos/color_scenes_video.mp4 (atomic; resumable).
+Output: output/videos/color_scenes_video_U<u10>.mp4 (atomic; resumable).
 """
 
 import argparse
@@ -38,8 +44,9 @@ OUT = Path(__file__).parent / "output"
 VIDEOS = OUT / "videos"
 CACHE = OUT / "color_tables"
 
-L, N, U10 = 32.0, 384, 6.5
-PX = 256                            # per-panel render size (fits a render window)
+L, N = 32.0, 512
+DEFAULT_U10 = 6.5
+PX = 400                            # per-panel render size (higher: see features)
 FPS = 30
 SEED = 2
 BANDS = SpectralBands.rgb()
@@ -70,7 +77,7 @@ SCENES = [
 ]
 SUN_AZ, TURB = 195.0, 0.15
 
-SEP, HEADER = 6, 40
+SEP, HEADER = 2, 22                 # tight grid: minimal gutter and title bar
 _FS = _video.font(16)
 
 
@@ -112,10 +119,13 @@ def _label(img_arr, titles):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[1])
-    ap.add_argument("--duration", type=float, default=60.0)
+    ap.add_argument("--duration", type=float, default=10.0)
+    ap.add_argument("--u10", type=float, default=DEFAULT_U10,
+                    help="wind speed (m/s); sets surface roughness")
     args = ap.parse_args()
+    U10 = args.u10
     VIDEOS.mkdir(parents=True, exist_ok=True)
-    final = VIDEOS / "color_scenes_video.mp4"
+    final = VIDEOS / f"color_scenes_video_U{U10:g}.mp4"
     if final.exists():
         print(f"exists, skipping -> {final.name}")
         return
@@ -144,7 +154,7 @@ def main():
         H += 1
     titles = [t for t, _ in SCENES]
 
-    log = open(VIDEOS / "color_scenes_video.log", "w")
+    log = open(VIDEOS / f"color_scenes_video_U{U10:g}.log", "w")
     tmp = final.with_suffix(".mp4.tmp")
     proc = _video.open_ffmpeg(tmp, W, H, FPS, log, crf=20)
     n_frames = int(round(args.duration * FPS))
