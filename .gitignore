@@ -10,6 +10,12 @@ dist/
 # demo outputs (figures, logs, cached tables/libraries)
 demos/output/
 
+# cross-validation harness outputs (renders, meshes, figures)
+validation/output/
+validation/out_flat/
+validation/output_color/
+validation/anim/
+
 # local tool state and historical prototypes (not part of the release)
 .claude/
 _bucket/

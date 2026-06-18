@@ -19,6 +19,9 @@ dependencies = [
 demos = ["matplotlib>=3.7"]
 asit = ["netCDF4>=1.6"]
 gpu = ["torch>=2.2"]
+# cross-validation against external renderers (Blender installed separately)
+# mitsuba>=3.6 wheels ship the polarized variants (scalar_spectral_polarized)
+validation = ["mitsuba>=3.6", "imageio>=2.31"]
 
 [dependency-groups]
 # synced by default by uv: everything needed for tests and demos

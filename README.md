@@ -74,6 +74,8 @@ print(res["R_total"], res["M_bin_mean"].shape)   # (9, 24, 4, 4)
 
 Demos in `demos/` write figures to `demos/output/`; see the **[illustrated gallery](demos/README.md)** for every figure, including the polarimetric slope/height reconstruction round trip. Tests: `uv run pytest`.
 
+For how `seapol` relates to prior work — a decomposition into its constituent validated models with references, plus integration-level precedents (Hieronymi 2016, You et al. 2011, D'Alimonte & Kajiyama 2016, Xue et al. 2021, Chu et al. 2020) — see **[docs/related_work.md](docs/related_work.md)**. A cross-validation harness comparing `seapol` against Blender (intensity) and Mitsuba 3 (polarized Stokes) lives in **[validation/](validation/README.md)**.
+
 ## Conventions
 
 * Coordinates: x east, y north, z up; `eta[i, j]` has row `i` = y. Wind direction measured from +x, counter-clockwise.
