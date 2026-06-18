@@ -19,7 +19,6 @@ FIGURES = [
     "demo_near_surface_scattering.png",
     "demo_color_scenes.png",
     "demo_stokes_panels.png",
-    "demo_asit_video_still.png",
     "demo_color_video_still.png",
     "demo_mc_reflectance.png",
     "demo_mc_water_body.png",
@@ -29,9 +28,6 @@ FIGURES = [
     "demo_fm98_3d_placement.png",
     "demo_slope_statistics.png",
     "demo_kw_spectrum.png",
-    "demo_asit_dispersion.png",
-    "demo_asit_surface.png",
-    "demo_beta_library.png",
     "demo_full_pipeline.png",
 ]
 

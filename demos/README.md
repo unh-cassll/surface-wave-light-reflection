@@ -61,13 +61,7 @@ run is resumable.
 | Script | What it shows |
 |---|---|
 | `demo_stokes_video.py` | S0, S1/S0, S2/S0 of the time-evolving Elfouhaily + FM98 blend on a 1 m / 1024$^2$ patch. `--sim-fps`/`--play-fps` decouple the simulation rate from playback for slow motion (sim above the playback rate resolves the fast capillary motion); `--domain` sets the patch size. |
-| `demo_asit_stokes_video.py` (ASIT) | Instrument-matched Stokes videos driven by the **measured** ASIT directional spectra (2.9 m FOV, 2048 px, 30 deg incidence). Short waves are band-limited to the camera's reliable resolution (~150 rad/m / 15 Hz) and evolved **bound** to the longer waves (monotone ramp), rendered as slow motion so the bound short-wave motion is coherent rather than aliased. |
 | `demo_color_scenes_video.py` | 60 s video form of `demo_color_scenes`: the five sky/water scenes evolving over one shared wave field, reusing the cached per-band scattering tables. |
-
-A frame from `demo_asit_stokes_video.py` (measured day025 spectrum,
-U10 = 10.7 m/s; S0, S1/S0, S2/S0):
-
-![ASIT measured-spectrum Stokes video frame](gallery/demo_asit_video_still.png)
 
 A frame from `demo_color_scenes_video.py` (five sky/water scenes
 evolving over a shared wave field):
@@ -104,13 +98,7 @@ evolving over a shared wave field):
 | Script | What it shows |
 |---|---|
 | `demo_kw_spectrum.py` (table) | Slope k-f spectra and Q(nu) of free-only vs hybrid synthesis with the measured bound ridge and Q(nu) overlay; Blackman-Harris diagnostics. |
-| `demo_asit_dispersion.py` (ASIT) | Streams a raw 6.9 GB Skw(f, kx, ky) cube: measured dispersion diagram with noise-floor subtraction and the off-shell bound fraction beta_obs(k). |
-| `demo_beta_library.py` (ASIT) | The library: measured beta(k) colored by wind speed and the wind-interpolated curves used by the synthesis. |
-| `demo_asit_surface.py` (ASIT) | Surface synthesized from a measured directional slope spectrum: spectrum-form comparison, slope PDFs (instrument histogram for context only), rendered imagery. |
 | `demo_full_pipeline.py` (table, ASIT) | Capstone: measured spectrum + measured beta + FM98/MTF/orbital advection time evolution; rendered movie (GIF) and same-run Q(nu) comparison. |
 
 ![k-f spectrum](gallery/demo_kw_spectrum.png)
-![ASIT dispersion](gallery/demo_asit_dispersion.png)
-![beta library](gallery/demo_beta_library.png)
-![ASIT surface](gallery/demo_asit_surface.png)
 ![full pipeline](gallery/demo_full_pipeline.png)

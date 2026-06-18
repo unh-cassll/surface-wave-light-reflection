@@ -1,6 +1,6 @@
 """
 Shared video helpers for the demo renderers (demo_stokes_video,
-demo_asit_stokes_video, demo_color_scenes_video).
+demo_color_scenes_video).
 
 These centralize the two things that are easy to get wrong when piping
 raw frames to ffmpeg:

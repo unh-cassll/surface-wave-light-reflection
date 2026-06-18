@@ -5,8 +5,7 @@ Each demo executes in its own subprocess with output captured to
 output/logs/<name>.log; demos whose data requirements are not met
 (ASIT trees, cached FM98 table, beta library) are skipped with the
 reason printed.  Demos run in dependency order: table-building demos
-precede table-loading ones, and demo_asit_dispersion regenerates the
-k-f reduction consumed by demo_kw_spectrum.
+precede table-loading ones.
 
     python run_all.py                 # everything available
     python run_all.py --list          # show the registry and status
@@ -27,7 +26,6 @@ TABLE = OUT / "fm98_table_deep.npz"
 EPSS = Path("/home/nathanlaxague/Dropbox/Professional/Github/E-PSS_paper/_data")
 STATS = EPSS / "ASIT2019_wave_spectra_stats_timeseries_empirical_gain.nc"
 ENV = EPSS / "ASIT2019_supporting_environmental_observations.nc"
-RAW = Path("/mnt/DATA/raw_ASIT2019_spectra")
 BETA_LIB = OUT / "asit_beta_library"
 
 
@@ -39,11 +37,6 @@ def _check_table():
 def _check_asit():
     ok = STATS.exists() and ENV.exists()
     return ok, f"needs ASIT stats/env data under {EPSS}"
-
-
-def _check_raw():
-    ok = RAW.is_dir() and any(RAW.iterdir())
-    return ok, f"needs raw ASIT k-f cubes under {RAW}"
 
 
 def _check_beta_lib():
@@ -73,10 +66,7 @@ REGISTRY = [
     ("demo_fm98_capillaries.py", [], "slow; builds FM98 table if missing"),
     ("demo_fm98_3d_placement.py", [], "medium; builds table if missing"),
     ("demo_slope_statistics.py", [_check_table], "slow"),
-    ("demo_asit_dispersion.py", [_check_raw, _check_asit], "slow"),
     ("demo_kw_spectrum.py", [_check_table], "slow"),
-    ("demo_asit_surface.py", [_check_asit], "medium"),
-    ("demo_beta_library.py", [_check_asit, _check_beta_lib], "fast"),
     ("demo_full_pipeline.py",
      [_check_table, _check_asit, _check_beta_lib], "slow"),
 ]
