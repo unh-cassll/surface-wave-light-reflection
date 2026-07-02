@@ -80,7 +80,8 @@ def main():
     else:
         beta = BETA
         beta_tag = f"beta = {BETA}"
-    print(f"hybrid stack ({beta_tag} at c = {C_BOUND} m/s + orbital "
+    print(f"hybrid stack ({beta_tag} on carriers "
+          f"{BOUND_SPEEDS[0]} m/s, weights {BOUND_SPEEDS[1]} + orbital "
           f"advection + FM98 + binding) ...")
     buf_hyb, cb = transect_buffer()
     # f_nyq: harmonics with m f(k_loc) above the record Nyquist would
@@ -106,8 +107,9 @@ def main():
 
     for ax, P, title in [(axes[0], P_lin, "free-only synthesis"),
                          (axes[1], P_hyb,
-                          f"hybrid ({beta_tag} at {C_BOUND} m/s "
-                          f"+ advection)")]:
+                          f"hybrid ({beta_tag}, carriers "
+                          f"{min(BOUND_SPEEDS[0])}-{max(BOUND_SPEEDS[0])} "
+                          f"m/s + advection)")]:
         lp = np.log10(np.maximum(P, P[P > 0].min()))
         im = ax.pcolormesh(kx, f, lp.T, cmap="magma",
                            vmin=lp.max() - 6, vmax=lp.max())
@@ -134,8 +136,11 @@ def main():
         nu_o, Q_o = np.load(asit)
         ax.semilogy(nu_o, Q_o / np.nanmax(Q_o), "k--", lw=1.2,
                     label="ASIT measured (U10 ~ 7)")
-    ax.axvline(1.0 / C_BOUND, color="r", ls=":", lw=0.8)
-    ax.text(1.0 / C_BOUND + 0.05, 3e-3, "bound c", rotation=90, fontsize=7)
+    # one marker per bound carrier speed, line width scaled by its weight
+    for c_b, w_b in zip(*BOUND_SPEEDS):
+        ax.axvline(1.0 / c_b, color="r", ls=":", lw=0.4 + 1.5 * w_b)
+    ax.text(1.0 / max(BOUND_SPEEDS[0]) + 0.05, 3e-3, "bound carriers",
+            rotation=90, fontsize=7)
     ax.axvline(1.0 / 0.23, color="b", ls=":", lw=0.8)
     ax.text(1.0 / 0.23 - 0.35, 3e-3, "slowest free", rotation=90,
             fontsize=7)
@@ -146,7 +151,8 @@ def main():
     ax.grid(alpha=0.3)
 
     fig.suptitle(f"slope k-f diagnostics, U10 = {U10} m/s: bound waves "
-                 f"ride c = {C_BOUND} m/s, off the dispersion shell")
+                 f"ride carriers at {min(BOUND_SPEEDS[0])}-"
+                 f"{max(BOUND_SPEEDS[0])} m/s, off the dispersion shell")
     plt.tight_layout()
     out = OUT / "demo_kw_spectrum.png"
     plt.savefig(out, bbox_inches="tight")

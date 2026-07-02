@@ -39,7 +39,8 @@ def main():
                          (gc, "-", "Gram-Charlier (Cox-Munk)")):
         S = sun_glint_stokes(d_out, zeros, zeros, sub, 30.0, 0.0, 1.0)
         ax.semilogy(np.rad2deg(th_v), S[:, 0], ls, label=lbl)
-    ax.axvline(30.0, color="k", lw=0.5, alpha=0.5)
+    # specular direction: sun at +30 deg zenith mirrors to view -30 deg
+    ax.axvline(-30.0, color="k", lw=0.5, alpha=0.5)
     ax.set_xlabel("view zenith toward +x (sun azimuth) [deg]")
     ax.set_ylabel("glint radiance / E_sun")
     ax.set_title(f"Principal-plane glint, U10 = {U10:.0f} m/s\n"

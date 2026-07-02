@@ -66,8 +66,11 @@ def main():
     r = run(flat, 0.5, water, n_rays=200_000, seed=2)
     th_c = 0.5 * (r["theta_edges"][:-1] + r["theta_edges"][1:])
     with np.errstate(invalid="ignore", divide="ignore"):
+        # energy per bin / (solid angle * cos theta): radiance, comparable
+        # to the first-order model (without cos theta it is only the
+        # projected flux and fakes a limb darkening)
         L_mc = (r["M_eff_water"][..., 0, 0].sum(axis=1)
-                / r["bin_solid_angle"].sum(axis=1))
+                / (r["bin_solid_angle"].sum(axis=1) * np.cos(th_c)))
     S_w = water_leaving_stokes(
         np.stack([np.sin(th_c), np.zeros_like(th_c), np.cos(th_c)], axis=-1),
         np.broadcast_to([0.0, 0.0, 1.0], (th_c.size, 3)),

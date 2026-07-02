@@ -61,7 +61,7 @@ run is resumable.
 | Script | What it shows |
 |---|---|
 | `demo_stokes_video.py` | S0, S1/S0, S2/S0 of the time-evolving Elfouhaily + FM98 blend on a 1 m / 1024$^2$ patch. `--sim-fps`/`--play-fps` decouple the simulation rate from playback for slow motion (sim above the playback rate resolves the fast capillary motion); `--domain` sets the patch size. |
-| `demo_color_scenes_video.py` | 60 s video form of `demo_color_scenes`: the five sky/water scenes evolving over one shared wave field, reusing the cached per-band scattering tables. |
+| `demo_color_scenes_video.py` | Video form of `demo_color_scenes` (default 10 s, `--duration` to change): the five sky/water scenes evolving over one shared wave field, reusing the cached per-band scattering tables. Also writes the gallery still `demo_color_video_still.png` from frame 0. |
 
 A frame from `demo_color_scenes_video.py` (five sky/water scenes
 evolving over a shared wave field):

@@ -77,7 +77,8 @@ def srgb_encode(linear):
 def stokes_bands_to_rgb(S_bands, wavelengths_nm, stokes_index: int = 0,
                         mode: str | None = None,
                         exposure: float | None = None,
-                        expose_quantile: float = 0.99):
+                        expose_quantile: float = 0.99,
+                        return_exposure: bool = False):
     """Displayable sRGB image (H, W, 3) from a spectral Stokes image
     (H, W, B, 4) (or any leading shape + (B, 4)).
 
@@ -85,7 +86,9 @@ def stokes_bands_to_rgb(S_bands, wavelengths_nm, stokes_index: int = 0,
     be colormapped instead).  mode "cie" (>= 5 bands default) or
     "direct" (3 bands ~ 450/550/650 as B/G/R).  exposure scales linear
     RGB before gamma; None auto-exposes so the expose_quantile of
-    luminance maps to 1.  NaN pixels (off-scene) come back black."""
+    luminance maps to 1.  return_exposure=True returns (image, exposure)
+    so video loops can freeze the frame-0 gain.  NaN pixels (off-scene)
+    come back black."""
     S = to_numpy(S_bands)
     wl = np.asarray(wavelengths_nm, dtype=float)
     band = S[..., stokes_index]
@@ -113,4 +116,5 @@ def stokes_bands_to_rgb(S_bands, wavelengths_nm, stokes_index: int = 0,
         ref = np.quantile(lum[finite], expose_quantile) if finite.any() \
             else 1.0
         exposure = 1.0 / max(ref, 1e-12)
-    return srgb_encode(rgb * exposure)
+    img = srgb_encode(rgb * exposure)
+    return (img, exposure) if return_exposure else img

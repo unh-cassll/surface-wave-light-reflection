@@ -161,9 +161,11 @@ bands = SpectralBands.rgb()                  # or SpectralBands.visible(13)
 skies = spectral_sky_factories(bands, "clear", sun_zenith_deg=45.0,
                                sun_azimuth_deg=195.0, turbidity=0.15)
 tables = build_spectral_tables(skies, WATER_TYPES["productive_case1"],
-                               bands, sun=(45.0, 195.0, 30.0))  # cacheable
+                               bands, sun=(45.0, 195.0, 30.0),
+                               turbidity=0.15)        # cacheable
 S = render_camera_image_spectral(eta, dx, bands, skies, water=tables,
                                  sun_glint=(45.0, 195.0, 30.0),
+                                 turbidity=0.15,      # same haze as the sky
                                  subpixel=sub)        # (H, W, B, 4)
 rgb = stokes_bands_to_rgb(S, bands.wavelengths_nm)    # (H, W, 3) sRGB
 ```
@@ -204,7 +206,7 @@ Passing a numpy `Generator` into a torch-backed call draws on the CPU and copies
 With the ASIT data on disk, the pipeline runs end-to-end from measurements (`demos/demo_full_pipeline.py`):
 
 * `load_asit_run` / `psi_from_asit` turn a run's measured directional slope spectrum S(k, theta) (Cartesian slope density per dkx dky, theta wind-relative) into Psi(kx, ky) for `generate_sea_surface(psi_override=...)`, with an Elfouhaily tail beyond the measured band.  Scope note: the measured spectrum's *form* and the k-f bound-wave structure are the calibration targets; instrument slope statistics (PDFs, MSS) are scale-limited and are shown for context only — slope statistics are built from the Elfouhaily + FM98 physics.
-* **Instrument-matched synthesis.**  `psi_from_asit(...,  k_max=...)` (and `generate_asit_surface(..., k_max=...)`) band-limit the spectrum with a cosine taper to a camera's reliable resolution.  A sensor at FS frames/s cannot measure wave dynamics above FS/2 (~15 Hz for a 30 fps camera, ~100-200 rad/m by the gravity-capillary dispersion), so for *time-evolving* instrument-matched imagery the short waves should be band-limited there (the higher-k content is unresolved and, evolved forward, aliases) and carried as **bound** rather than free (`bound_fraction=...`, a simple monotone ramp), since cm-scale waves ride the longer waves instead of free-dispersing.  See `demos/demo_asit_stokes_video.py`.
+* **Instrument-matched synthesis.**  `psi_from_asit(...,  k_max=...)` (and `generate_asit_surface(..., k_max=...)`) band-limit the spectrum with a cosine taper to a camera's reliable resolution.  A sensor at FS frames/s cannot measure wave dynamics above FS/2 (~15 Hz for a 30 fps camera, ~100-200 rad/m by the gravity-capillary dispersion), so for *time-evolving* instrument-matched imagery the short waves should be band-limited there (the higher-k content is unresolved and, evolved forward, aliases) and carried as **bound** rather than free (`bound_fraction=...`, a simple monotone ramp), since cm-scale waves ride the longer waves instead of free-dispersing.
 * `reduce_kf_cube` streams a raw 6.9 GB Skw(f, kx, ky) cube into S(|k|, f) with the noise floor (estimated in the forbidden region of (k, f) space) subtracted; batch-reducing the ASIT runs builds a library of measured beta(k) curves (130 runs, U10 = 2.6-18 m/s: bound fraction rises monotonically with k toward ~1 at 100-200 rad/m and increases with wind), and `bound_fraction_for_wind` interpolates the library (monotone envelope, smoothed/tapered/capped) for synthesis.
 * The renderers take `sun_glint=(zen, az, E_sun)`: the analytic Cox-Munk glint (sub-pixel slope PDF at the specular slope through the full Mueller chain), which avoids the glitter speckle of Monte Carlo sun-disk sampling.
 

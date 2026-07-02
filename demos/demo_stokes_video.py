@@ -112,7 +112,7 @@ def _tag():
     if abs(L - 1.0) > 1e-9:
         s += f"_L{int(round(L * 100)):02d}cm"
     if SIM_FPS != PLAY_FPS:
-        s += f"_sim{SIM_FPS}_slowmo{SIM_FPS // PLAY_FPS}x"
+        s += f"_sim{SIM_FPS}_slowmo{SIM_FPS / PLAY_FPS:g}x"
     elif SIM_FPS != 30:
         s += f"_F{SIM_FPS}"
     return s

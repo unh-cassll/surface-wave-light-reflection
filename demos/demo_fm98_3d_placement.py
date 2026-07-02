@@ -85,7 +85,7 @@ def main():
 
     # Carrier-scale groups: explicit k_loc windows whose resonance
     # harmonic m* = (k_m / k_loc)^2 stays inside the table depth
-    # (M_keep = 20), restricted to the strongest 30% of the envelope
+    # (M_keep = 28), restricted to the strongest 30% of the envelope
     groups = {"long carriers": (90.0, 110.0),
               "short carriers": (150.0, 200.0)}
     akm = A * k_loc
@@ -104,11 +104,13 @@ def main():
     ax.set_xlabel("x [m]")
     ax.set_ylabel("y [m]")
 
-    # --- bound-harmonic curvature zoom at the steepest group
+    # --- bound-harmonic curvature zoom at the steepest group; window
+    # clamped inside the domain so the group stays in view near edges
     iy, ix = np.unravel_index(np.argmax(A * k_loc), A.shape)
     half = 192
-    sl = (slice((iy - half) % N, (iy - half) % N + 2 * half),
-          slice((ix - half) % N, (ix - half) % N + 2 * half))
+    y0 = int(np.clip(iy - half, 0, N - 2 * half))
+    x0 = int(np.clip(ix - half, 0, N - 2 * half))
+    sl = (slice(y0, y0 + 2 * half), slice(x0, x0 + 2 * half))
     hi = results["local"]
     curv = (np.gradient(np.gradient(hi, dx, axis=1), dx, axis=1)
             + np.gradient(np.gradient(hi, dx, axis=0), dx, axis=0))

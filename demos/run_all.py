@@ -26,7 +26,6 @@ TABLE = OUT / "fm98_table_deep.npz"
 EPSS = Path("/home/nathanlaxague/Dropbox/Professional/Github/E-PSS_paper/_data")
 STATS = EPSS / "ASIT2019_wave_spectra_stats_timeseries_empirical_gain.nc"
 ENV = EPSS / "ASIT2019_supporting_environmental_observations.nc"
-BETA_LIB = OUT / "asit_beta_library"
 
 
 def _check_table():
@@ -37,11 +36,6 @@ def _check_table():
 def _check_asit():
     ok = STATS.exists() and ENV.exists()
     return ok, f"needs ASIT stats/env data under {EPSS}"
-
-
-def _check_beta_lib():
-    ok = BETA_LIB.is_dir() and any(BETA_LIB.glob("*.npz"))
-    return ok, f"needs beta library {BETA_LIB}"
 
 
 # (script, requirement checks, runtime hint); dependency order.  Checks
@@ -60,15 +54,15 @@ REGISTRY = [
      "medium; builds upwelling table if missing"),
     ("demo_color_scenes.py", [],
      "slow; builds per-band tables if missing"),
-    ("demo_stokes_panels.py", [_check_table],
-     "medium; GPU when available, reuses the deep FM98 table"),
     ("demo_fm98_crest_stokes.py", [], "medium"),
     ("demo_fm98_capillaries.py", [], "slow; builds FM98 table if missing"),
+    ("demo_stokes_panels.py", [],
+     "medium; GPU when available, reuses the deep FM98 table when present"),
     ("demo_fm98_3d_placement.py", [], "medium; builds table if missing"),
     ("demo_slope_statistics.py", [_check_table], "slow"),
     ("demo_kw_spectrum.py", [_check_table], "slow"),
-    ("demo_full_pipeline.py",
-     [_check_table, _check_asit, _check_beta_lib], "slow"),
+    ("demo_full_pipeline.py", [_check_table, _check_asit],
+     "slow; uses the beta library when present, scalar ramp otherwise"),
 ]
 
 

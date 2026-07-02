@@ -7,10 +7,10 @@ Phase-locked parasitic capillaries, two ways:
      but ~half the carrier amplitude in slope, so the profiles are shown
      in both elevation and slope.
   2. A capillary-resolving hybrid surface (dx ~ 0.5 mm) with the deep
-     (M_keep = 20) gauge-fixed FM98 table: bound-harmonic curvature
+     (M_keep = 28) gauge-fixed FM98 table: bound-harmonic curvature
      reveals ripple packets phase-locked to the steep wave-group crests.
 
-The deep table build (~5 min) is cached to demos/output/.
+The deep table build (one-time, ~30 min) is cached to demos/output/.
 """
 
 from pathlib import Path

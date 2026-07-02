@@ -162,6 +162,10 @@ def main():
     sub = SubpixelSlopes.from_cox_munk(U10, np.pi / (L / N))
     t0 = time.perf_counter()
 
+    # per-scene exposure frozen at frame 0 so panel brightness stays on a
+    # fixed radiometric scale (per-frame auto-exposure pumps with glint)
+    exposures = [None] * len(setups)
+
     def cb(it, t, eta, sx, sy):
         canvas = np.zeros((H, W, 3), np.uint8)
         for i, ((skies, tabs, sun), kw) in enumerate(setups):
@@ -169,14 +173,18 @@ def main():
                 eta, L / N, BANDS, skies, camera=CAM, water=tabs,
                 sun_glint=sun, turbidity=TURB, slope_x=sx, slope_y=sy,
                 subpixel=sub, n_subpixel=1, seed=SEED)
-            rgb = (np.clip(stokes_bands_to_rgb(
+            img, exposures[i] = stokes_bands_to_rgb(
                 S, BANDS.wavelengths_nm, mode="direct",
-                expose_quantile=0.995), 0, 1) * 255).astype(np.uint8)
+                exposure=exposures[i], expose_quantile=0.995,
+                return_exposure=True)
+            rgb = (np.clip(img, 0, 1) * 255).astype(np.uint8)
             r, c = divmod(i, cols)
             y0 = r * ch + HEADER
             x0 = c * cw
             canvas[y0:y0 + PX, x0:x0 + PX, :] = rgb
         frame = _label(canvas, titles)
+        if it == 0:
+            Image.fromarray(frame).save(OUT / "demo_color_video_still.png")
         proc.stdin.write(frame.tobytes())
 
     generate_sea_surface(L, N, U10, times=times, compute_slopes=True,

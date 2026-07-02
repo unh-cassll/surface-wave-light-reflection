@@ -3,7 +3,8 @@ Capstone: the full seapol pipeline driven end-to-end by ASIT 2019
 measurements for a single run.
 
     measured S(k, theta)  ->  Psi(kx, ky)            (empirical spectrum)
-    measured beta(k; U10) ->  free/bound partition   (cube-reduction library)
+    measured beta(k; U10) ->  free/bound partition   (cube-reduction
+                              library when present; scalar ramp fallback)
     resolved Psi          ->  carrier-speed weights  (bound_speed="spectrum")
     + FM98 bound harmonics, long-wave MTF binding, orbital advection
     -> time-evolving surface -> polarimetric imagery (analytic glint)
@@ -47,11 +48,18 @@ def main():
     print(f"run {RUN}, U10 = {U10:.2f} m/s")
 
     psi = psi_from_asit(run_data)
-    # bound fraction keyed by sea state (wind AND inverse wave age)
-    Om = float(run_conditions(STATS, ENV)["inverse_wave_age"][RUN])
-    print(f"inverse wave age Omega = {Om:.2f}")
-    beta = bound_fraction_for_conditions(LIB, STATS, ENV, U10,
-                                         inverse_wave_age=Om)
+    # bound fraction keyed by sea state (wind AND inverse wave age) when
+    # a measured beta library exists; scalar ramp fallback otherwise
+    if LIB.is_dir() and any(LIB.glob("*.npz")):
+        Om = float(run_conditions(STATS, ENV)["inverse_wave_age"][RUN])
+        print(f"inverse wave age Omega = {Om:.2f}")
+        beta = bound_fraction_for_conditions(LIB, STATS, ENV, U10,
+                                             inverse_wave_age=Om)
+        beta_tag = "measured beta(k; U10, Omega)"
+    else:
+        beta = 0.9
+        beta_tag = f"default ramp beta_max = {beta} (no beta library)"
+    print(f"bound fraction: {beta_tag}")
     table = FM98Table.load(OUT / "fm98_table_deep.npz")
 
     print(f"hybrid record (streamed): L = {L} m, N = {N}, {NT} frames "
