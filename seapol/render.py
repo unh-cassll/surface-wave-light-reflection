@@ -144,13 +144,15 @@ def make_partly_cloudy_sky(sun_zenith_deg: float, sun_azimuth_deg: float,
 
 def smith_lambda(theta, sigma_slope: float):
     """Smith (1967) shadowing integral Lambda(theta) for an isotropic
-    Gaussian surface with total slope std sigma_slope."""
+    Gaussian surface with total (2-D) slope std sigma_slope; Smith's mu
+    uses the along-azimuth 1-D slope std sigma_slope/sqrt(2), so
+    mu = cot(theta) / (sqrt(2) * sigma_1D) = cot(theta) / sigma_slope."""
     xp = xp_of(theta)
     theta = xp.asarray(theta, dtype=float)
     if sigma_slope <= 0.0:
         return xp.zeros_like(theta)
     mu = 1.0 / (xp.tan(xp.clip(theta, 1e-9, np.pi / 2 - 1e-9))
-                * np.sqrt(2.0) * sigma_slope)
+                * sigma_slope)
     lam = 0.5 * (xp.exp(-mu**2) / (np.sqrt(np.pi) * mu) - xp.erfc(mu))
     return xp.maximum(lam, 0.0)
 
@@ -405,6 +407,15 @@ def downwelling_irradiance(sky_fn, n_zen: int = 16, n_az: int = 32) -> float:
     return float(np.sum(I * np.cos(ZEN) * d_omega))
 
 
+def _resolve_n_water(n_water, water):
+    """Default refractive index: an UpwellingRadianceTable carries the n
+    it was built with; otherwise 1.34."""
+    if n_water is not None:
+        return float(n_water)
+    n_tab = getattr(water, "n_water", None)
+    return float(n_tab) if n_tab is not None else 1.34
+
+
 def _water_leaving_term(d_out, n_hat, water, E_d, n_water):
     """Dispatch the water-leaving radiance term on the water model type:
     water.WaterBody (first-order isotropic) or
@@ -469,7 +480,7 @@ def render_facet_stokes(eta, dx: float,
                         sky=None,
                         slope_x=None,
                         slope_y=None,
-                        n_water: float = 1.34,
+                        n_water: float | None = None,
                         subpixel: SubpixelSlopes | None = None,
                         n_subpixel: int = 64,
                         shadowing: bool = False,
@@ -494,6 +505,7 @@ def render_facet_stokes(eta, dx: float,
     if sky is None:
         sky = make_unpolarized_sky(1.0)
     rng = adapt_rng(rng, xp)
+    n_water = _resolve_n_water(n_water, water)
     eta = xp.asarray(eta, dtype=float)
     H, W = eta.shape
 
@@ -569,13 +581,16 @@ def _bilinear(field, dx: float, x, y):
     return v, ok
 
 
-def _camera_rays(cam: PinholeCamera, L: float, xp):
-    """Pixel ray origin (3,) numpy and directions (H, W, 3) in xp."""
+def _camera_rays(cam: PinholeCamera, Lx: float, Ly: float, xp):
+    """Pixel ray origin (3,) numpy and directions (H, W, 3) in xp.
+    Pixel centers follow the edge-aligned convention (outer pixel EDGES
+    of the larger image axis at +/- tan(hfov)), matching Mitsuba/Blender
+    for cross-renderer comparisons."""
     H, W = cam.img_shape
     th = np.deg2rad(cam.zenith_deg)
     ph = np.deg2rad(cam.azimuth_deg)
     z0 = cam.altitude_m
-    center = np.array([L / 2.0, L / 2.0, 0.0])
+    center = np.array([Lx / 2.0, Ly / 2.0, 0.0])
     origin = center + np.array([np.tan(th) * z0 * np.cos(ph),
                                 np.tan(th) * z0 * np.sin(ph),
                                 z0])
@@ -586,8 +601,9 @@ def _camera_rays(cam: PinholeCamera, L: float, xp):
     up = np.cross(right, look)
 
     half = np.tan(np.deg2rad(cam.hfov_deg))
-    ys = np.linspace(-half, half, H) * (H / max(H, W))
-    xs = np.linspace(-half, half, W) * (W / max(H, W))
+    step = 2.0 * half / max(H, W)
+    ys = (np.arange(H) - (H - 1) / 2.0) * step
+    xs = (np.arange(W) - (W - 1) / 2.0) * step
     XS, YS = np.meshgrid(xs, -ys)
     dirs = (look[None, None, :]
             + right[None, None, :] * XS[..., None]
@@ -601,7 +617,7 @@ def render_camera_image(eta, dx: float,
                         sky=None,
                         slope_x=None,
                         slope_y=None,
-                        n_water: float = 1.34,
+                        n_water: float | None = None,
                         subpixel: SubpixelSlopes | None = None,
                         n_subpixel: int = 0,
                         shadowing: bool = False,
@@ -620,16 +636,16 @@ def render_camera_image(eta, dx: float,
     if sky is None:
         sky = make_unpolarized_sky(1.0)
     rng = adapt_rng(rng, xp)
+    n_water = _resolve_n_water(n_water, water)
     eta = xp.asarray(eta, dtype=float)
     Hs, Ws = eta.shape
-    L = Ws * dx
 
     if slope_x is None or slope_y is None:
         gy, gx = xp.gradient(eta, dx)
         slope_x = gx if slope_x is None else slope_x
         slope_y = gy if slope_y is None else slope_y
 
-    origin, dirs = _camera_rays(camera, L, xp)
+    origin, dirs = _camera_rays(camera, Ws * dx, Hs * dx, xp)
 
     # Intersect z = 0, then one fixed-point refinement against eta
     dz = dirs[..., 2]
