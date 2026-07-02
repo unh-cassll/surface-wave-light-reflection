@@ -11,7 +11,6 @@ import pytest
 from seapol import backend
 from seapol.backend import get_xp, to_numpy, xp_of
 
-torch = pytest.importorskip("torch") if False else None
 HAS_TORCH = backend.has_torch()
 needs_torch = pytest.mark.skipif(not HAS_TORCH, reason="torch not installed")
 

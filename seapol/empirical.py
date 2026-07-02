@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import datetime as _dt
 import re
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -115,9 +116,14 @@ def reduce_kf_cube(path, n_kbin: int = 60, f_stride: int = 3,
                         if forb[:, j].sum() > 5 else np.nan
                         for j in range(f_u.size)])
     ok_f = np.isfinite(noise_f)
-    noise_f = np.interp(np.arange(f_u.size), np.flatnonzero(ok_f),
-                        noise_f[ok_f])
-    S_kf = np.clip(S_kf - noise_f[None, :] * counts[:, None], 0.0, None)
+    if ok_f.any():
+        noise_f = np.interp(np.arange(f_u.size), np.flatnonzero(ok_f),
+                            noise_f[ok_f])
+        S_kf = np.clip(S_kf - noise_f[None, :] * counts[:, None], 0.0, None)
+    else:
+        warnings.warn("no forbidden-region (k, f) bins available for "
+                      "noise-floor estimation; skipping noise subtraction",
+                      stacklevel=2)
 
     # off-shell fraction where the free shell is inside the band
     beta_obs = np.full(n_kbin, np.nan)
@@ -195,7 +201,8 @@ def bound_fraction_for_wind(library_dir, U10: float,
                             beta_cap: float = 0.99,
                             monotone: bool = True):
     """Callable beta(K) for a given wind speed, from a library of cube
-    reductions (one npz per cube, as written by demos/batch_asit_beta.py).
+    reductions (one npz per cube with fields U10, k, beta_obs, as
+    produced by reduce_kf_cube).
 
     The n_neighbors reductions nearest in wind speed are averaged with
     inverse-distance weights, then smoothed/capped/tapered like
@@ -399,7 +406,9 @@ def psi_from_asit(run_data: dict, U10: float | None = None,
             lk = np.log(K[inside])
             ik = np.clip(np.searchsorted(log_k, lk) - 1, 0, k_m.size - 2)
             tk = (lk - log_k[ik]) / (log_k[ik + 1] - log_k[ik])
-            ft = PHI[inside] / dth
+            # anchor to the measured theta grid origin (grids may start
+            # at -pi rather than 0)
+            ft = np.mod(PHI[inside] - th_m[0], 2.0 * np.pi) / dth
             it = np.floor(ft).astype(int) % n_th
             it1 = (it + 1) % n_th
             tt = ft - np.floor(ft)

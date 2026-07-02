@@ -506,8 +506,10 @@ class _TorchShim:
         return _torch().searchsorted(self.asarray(a), self.asarray(v),
                                      right=(side == "right"))
 
-    def digitize(self, x, bins):
-        return _torch().bucketize(self.asarray(x), self.asarray(bins))
+    def digitize(self, x, bins, right=False):
+        # torch.bucketize's `right` is the inverse of np.digitize's
+        return _torch().bucketize(self.asarray(x), self.asarray(bins),
+                                  right=not right)
 
     def bincount(self, x, minlength=0):
         return _torch().bincount(x, minlength=minlength)

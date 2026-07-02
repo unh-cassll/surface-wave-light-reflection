@@ -1,14 +1,10 @@
 """Empirical beta(k) fitting and orbital advection."""
 
-from pathlib import Path
-
 import numpy as np
 import pytest
 
 from seapol import (apply_orbital_advection, bound_fraction_from_kf_reduction,
                     generate_sea_surface, smooth_beta_curve)
-
-ASIT_NPZ = Path(__file__).parent.parent / "demos/output/asit_kf_reduced.npz"
 
 
 def test_smooth_beta_curve_fills_gaps():
@@ -21,14 +17,23 @@ def test_smooth_beta_curve_fills_gaps():
     np.testing.assert_allclose(out, 0.8, atol=1e-6)
 
 
-@pytest.mark.skipif(not ASIT_NPZ.exists(), reason="ASIT reduction not built")
-def test_bound_fraction_from_asit():
-    beta_fn = bound_fraction_from_kf_reduction(ASIT_NPZ)
+def test_bound_fraction_from_kf_reduction(tmp_path):
+    """Synthetic reduction npz with the fields the fitter reads: a
+    monotone-rising beta_obs(k) with band-edge NaN gaps, as a clean cube
+    reduction yields."""
+    k = np.geomspace(3.0, 1400.0, 40)
+    beta_obs = 0.95 / (1.0 + (35.0 / k) ** 2)
+    beta_obs[5] = beta_obs[17] = np.nan
+    npz = tmp_path / "kf_reduced.npz"
+    np.savez(npz, k=k, beta_obs=beta_obs, U10=7.3)
+
+    beta_fn = bound_fraction_from_kf_reduction(npz)
     K = np.array([1.0, 5.0, 50.0, 300.0, 2000.0])
     b = beta_fn(K)
     assert np.all((b >= 0) & (b <= 0.99))
-    assert b[0] < 0.1            # dominant waves stay free
+    assert b[0] < 0.1            # dominant waves stay free (taper)
     assert b[2] > 0.5            # short-gravity range mostly bound
+    assert abs(b[4] - b[3]) < 0.1   # held level beyond the last bin
     # works as a synthesis input
     surf = generate_sea_surface(L=8.0, N=128, U10=7.0,
                                 bound_fraction=beta_fn, bound_speed=2.0,

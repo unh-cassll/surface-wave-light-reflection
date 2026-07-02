@@ -1,16 +1,9 @@
 """Streaming (frame_callback) synthesis and conditions-keyed beta."""
 
-from pathlib import Path
-
 import numpy as np
 import pytest
 
 from seapol import generate_hybrid_surface, generate_sea_surface
-
-DATA = Path("/home/nathanlaxague/Dropbox/Professional/Github/E-PSS_paper/_data")
-STATS = DATA / "ASIT2019_wave_spectra_stats_timeseries_empirical_gain.nc"
-ENV = DATA / "ASIT2019_supporting_environmental_observations.nc"
-LIB = Path(__file__).parent.parent / "demos/output/asit_beta_library"
 
 
 def test_surface_streaming_matches_stack():
@@ -56,15 +49,55 @@ def test_hybrid_streaming(tiny_table_path=None):
     assert surf.eta.shape == (128, 128)
 
 
-@pytest.mark.skipif(not (STATS.exists() and LIB.exists()),
-                    reason="ASIT data/library not available")
-def test_conditions_keyed_beta():
+def _conditions_fixture(tmp_path, n_runs=6):
+    """Synthetic ASIT-format stats/env netCDFs and beta-reduction library
+    covering the fields run_conditions and bound_fraction_for_conditions
+    read."""
+    nc = pytest.importorskip("netCDF4")
+    f = np.linspace(0.05, 2.0, 40)
+    th = np.linspace(-np.pi, np.pi, 24, endpoint=False)
+    fp_true = np.linspace(0.15, 0.4, n_runs)
+
+    stats = tmp_path / "stats.nc"
+    d = nc.Dataset(stats, "w")
+    d.createDimension("run", n_runs)
+    d.createDimension("f", f.size)
+    d.createDimension("theta", th.size)
+    d.createVariable("f_Hz", "f8", ("f",))[:] = f
+    d.createVariable("theta_rad", "f8", ("theta",))[:] = th
+    Sf = d.createVariable("S_f_theta", "f8", ("run", "theta", "f"))
+    for r in range(n_runs):
+        Sf[r] = np.broadcast_to(
+            np.exp(-0.5 * ((f - fp_true[r]) / 0.05) ** 2), (th.size, f.size))
+    d.close()
+
+    env = tmp_path / "env.nc"
+    d = nc.Dataset(env, "w")
+    d.createDimension("run", n_runs)
+    d.createVariable("t_seconds_since_January_1_1970", "f8",
+                     ("run",))[:] = np.arange(n_runs) * 3600.0
+    d.createVariable("EC_U_m_s", "f8",
+                     ("run",))[:] = np.linspace(4.0, 12.0, n_runs)
+    d.close()
+
+    lib = tmp_path / "beta_lib"
+    lib.mkdir()
+    k = np.geomspace(3.0, 1400.0, 40)
+    for r in range(n_runs):
+        U = 4.0 + 8.0 * r / (n_runs - 1)
+        beta = (0.9 * U / 12.0) / (1.0 + (35.0 / k) ** 2)
+        np.savez(lib / f"run{r:03d}.npz", run=r, U10=U, k=k, beta_obs=beta)
+    return stats, env, lib
+
+
+def test_conditions_keyed_beta(tmp_path):
     from seapol import bound_fraction_for_conditions, run_conditions
-    conds = run_conditions(STATS, ENV)
-    assert np.isfinite(conds["inverse_wave_age"]).sum() > 100
+    stats, env, lib = _conditions_fixture(tmp_path)
+    conds = run_conditions(stats, env)
+    assert np.isfinite(conds["inverse_wave_age"]).sum() == 6
     K = np.array([5.0, 30.0, 200.0])
     for om in (None, 1.0, 3.0):
-        b = bound_fraction_for_conditions(LIB, STATS, ENV, 8.0,
+        b = bound_fraction_for_conditions(lib, stats, env, 8.0,
                                           inverse_wave_age=om)(K)
         assert np.all((b >= 0) & (b <= 0.99))
         assert b[0] < b[1] <= b[2] + 1e-9   # monotone-ish in k
