@@ -379,6 +379,9 @@ def augment_fm98(eta, dx: float, table: FM98Table,
                  float(table.k_grid[-1]))
     akq = xp.clip(ak_map.ravel(), float(table.ak_grid[0]),
                   float(table.ak_grid[-1]))
+    # akq only indexes the table; harmonic amplitudes scale with the
+    # true envelope steepness so they vanish where the envelope does
+    ak_amp = ak_map.ravel()
     iq = xp.clip(xp.searchsorted(log_kg, xp.log(kq)) - 1, 0, n_k - 2)
     jq = xp.clip(xp.searchsorted(ag, akq) - 1, 0, n_ak - 2)
     tk = (xp.log(kq) - log_kg[iq]) / (log_kg[iq + 1] - log_kg[iq])
@@ -425,7 +428,7 @@ def augment_fm98(eta, dx: float, table: FM98Table,
         r2 += ratio**2                  # full-table shrink, as before
         if m_idx >= m_top:
             continue
-        amp = akq * ratio               # |a_m| with |a_1| -> ak
+        amp = ak_amp * ratio            # |a_m| with |a_1| -> ak
         if carrier_k == "local":
             amp = xp.where(m * kq <= k_nyq, amp, xp.zeros_like(amp))
         if f_loc_q is not None:

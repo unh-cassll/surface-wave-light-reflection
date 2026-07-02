@@ -57,6 +57,7 @@ def test_table_interp_linear_limit():
                          converged=np.ones((2, 2), bool),
                          M_keep=3, p=1e-3)
     a, c = tbl.interp(150.0, 0.01)           # far below tabulated ak
-    assert a[0] == 0.01 + 0j and np.all(a[1:] == 0) and c == 1.0
+    # linear limit in the table gauge arg(a_1) = pi
+    assert a[0] == -0.01 + 0j and np.all(a[1:] == 0) and c == 1.0
     a, _ = tbl.interp(150.0, 0.15)
     assert abs(abs(a[0]) - 0.15) < 1e-12     # |a_1| rescaled to ak

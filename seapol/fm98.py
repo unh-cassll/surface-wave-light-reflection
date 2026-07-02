@@ -326,6 +326,8 @@ def solve_fm98_continuation(wavelength: float, ak_target: float,
     near branch folds), so marching accepts steps at res_ok and, when
     the step size bottoms out, relaxes the acceptance threshold by 5x
     at a time up to res_cap before giving up."""
+    # target below the requested start: solve directly, no marching
+    direct = ak_target <= ak_start
     ak_start = min(ak_start, ak_target * 0.5)
 
     if p_ramp == "proportional":
@@ -350,7 +352,7 @@ def solve_fm98_continuation(wavelength: float, ak_target: float,
                           p=float(p_of(ak1)), M=M, N=N,
                           which_class=which_class, x0=x_init, **kwargs)
 
-    if ak_target <= ak_start:
+    if direct:
         return _solve(ak_target, None)
 
     # Adaptive step-size marching in log ak: grow the step after
@@ -482,8 +484,9 @@ class FM98Table:
         k = float(k)
         kg, ag = self.k_grid, self.ak_grid
         if ak <= ag[0] * 0.5:
+            # linear limit in the table gauge arg(a_1) = pi
             a = np.zeros(self.M_keep, dtype=complex)
-            a[0] = ak + 0j
+            a[0] = -ak + 0j
             return a, 1.0
         ak = float(np.clip(ak, ag[0], ag[-1]))
         k = float(np.clip(k, kg[0], kg[-1]))
