@@ -57,7 +57,7 @@ def main() -> None:
 
     spec = SceneSpec.from_json(args.scene)
     cb = spec.camera_basis()
-    n_water = spec.n_water if spec.n_water > 0 else 1.34
+    n_water = spec.refractive_index()   # same Quan & Fry n as render_seapol
     H, W = cb["H"], cb["W"]
 
     origin = cb["origin"]

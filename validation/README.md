@@ -43,6 +43,11 @@ uv run validation/compare.py
 `compare.py` runs with neither Blender nor Mitsuba installed — it reports the
 seapol baseline and skips the missing stages with a message.
 
+Note on the Mitsuba DoLP metric: it validates Fresnel only with
+`"unpolarized_sky": true` in the scene JSON (Mitsuba's environment is always
+unpolarized, seapol's default is a polarized Rayleigh sky); `compare.py` labels
+the metric accordingly. See the flat-surface sanity check below.
+
 ## Color-aware S0: seapol vs Mitsuba
 
 `s0_color.py` renders one synthetic wave field's reflected-sky intensity (S0) in
@@ -76,6 +81,14 @@ does — which is why the seapol↔Mitsuba agreement improves with spp.
 multiplicative `alpha`, fit by least squares on luminance over the overlapping
 valid pixels, puts them on a common absolute scale, so the comparison is about
 spatial/chromatic structure rather than arbitrary exposure.
+
+`s0_color_anim.py` is the animated form: a time-evolving surface rendered by
+both codes side by side into an mp4 (requires ffmpeg on PATH):
+
+```bash
+uv run validation/s0_color_anim.py --out validation/output_color_anim \
+    --seconds 4 --fps 8 --spp 1024 --n 192 --res 192   # or --frames N
+```
 
 Two registration details the Blender path gets right (easy to miss): the OBJ is
 imported with `up_axis="Z", forward_axis="Y"` (Blender's default Y-up conversion

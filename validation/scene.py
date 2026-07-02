@@ -90,7 +90,8 @@ class SceneSpec:
         right = right / np.linalg.norm(right)
         up = np.cross(right, look)
         H, W = self.img_shape
-        # seapol spans +/- atan(tan(hfov)) on the larger axis (aspect-scaled)
+        # seapol places the outer pixel EDGES of the larger axis at
+        # +/- tan(hfov) (edge-aligned, matching Mitsuba/Blender)
         half = np.tan(np.deg2rad(self.hfov_deg))
         return dict(origin=origin, look=look, right=right, up=up,
                     center=center, half=half, H=H, W=W, L=L)

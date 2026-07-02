@@ -32,8 +32,9 @@ def camera_dirs_and_meridian(spec):
     cb = spec.camera_basis()
     look, right, up = cb["look"], cb["right"], cb["up"]
     H, W, half = cb["H"], cb["W"], cb["half"]
-    ys = np.linspace(-half, half, H) * (H / max(H, W))
-    xs = np.linspace(-half, half, W) * (W / max(H, W))
+    step = 2.0 * half / max(H, W)   # edge-aligned pixel centers, as in seapol
+    ys = (np.arange(H) - (H - 1) / 2.0) * step
+    xs = (np.arange(W) - (W - 1) / 2.0) * step
     XS, YS = np.meshgrid(xs, -ys)
     dirs = (look[None, None, :] + right[None, None, :] * XS[..., None]
             + up[None, None, :] * YS[..., None])

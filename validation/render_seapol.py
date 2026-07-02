@@ -48,11 +48,14 @@ def main() -> None:
     sub = SubpixelSlopes(info.get("sigma_a2_cut", 0.0),
                          info.get("sigma_c2_cut", 0.0))
 
+    # subpixel ensemble seeded (seed + 1; the surface draw uses seed) so
+    # repeated runs of the same scene.json are bit-reproducible
     S = render_camera_image(eta, dx, camera=cam, sky=sky,
                             slope_x=info.get("slope_x"),
                             slope_y=info.get("slope_y"),
                             n_water=n_water, subpixel=sub, n_subpixel=16,
-                            shadowing=True)
+                            shadowing=True,
+                            rng=np.random.default_rng(spec.seed + 1))
     S = np.asarray(S)
     I = S[..., 0]
     dolp = np.asarray(stokes_dolp(S))
@@ -61,6 +64,9 @@ def main() -> None:
     np.savez(os.path.join(args.out, "seapol.npz"),
              I=I, S=S, dolp=dolp, aop=aop, n_water=n_water)
     export_obj(eta, dx, os.path.join(args.out, "surface.obj"))
+    # persist the resolved n so Blender/Mitsuba (which cannot import
+    # seapol's Quan & Fry) use the identical refractive index
+    spec.n_water = n_water
     spec.to_json(os.path.join(args.out, "scene.json"))
 
     valid = np.isfinite(I)

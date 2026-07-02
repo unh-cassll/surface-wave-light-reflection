@@ -139,9 +139,19 @@ def main() -> None:
             print(f"[mitsuba] DoLP |err| mean={np.nanmean(dd[m]):.4f} "
                   f"median={np.nanmedian(dd[m]):.4f} max={np.nanmax(dd[m]):.3f} "
                   f"over {m.sum()} px")
+            # the DoLP comparison validates Fresnel only when both codes
+            # see the same (unpolarized) sky; Mitsuba's environment is
+            # always unpolarized, seapol's default is a Rayleigh sky
+            sj = os.path.join(out, "scene.json")
+            unpol = False
+            if os.path.exists(sj):
+                from scene import SceneSpec
+                unpol = SceneSpec.from_json(sj).unpolarized_sky
+            tag = ("frame-invariant -> validates Fresnel" if unpol else
+                   "skies differ: seapol Rayleigh vs Mitsuba unpolarized; "
+                   "set unpolarized_sky=true for a Fresnel validation")
             print(f"  seapol DoLP mean={np.nanmean(dolp0[m]):.3f}  "
-                  f"mitsuba DoLP mean={np.nanmean(dolpm[m]):.3f}  "
-                  f"(frame-invariant -> validates Fresnel)")
+                  f"mitsuba DoLP mean={np.nanmean(dolpm[m]):.3f}  ({tag})")
             # AoP: rotate Mitsuba's camera-frame AoP into seapol's meridian
             # frame using the per-pixel geometric meridian angle (a fixed global
             # offset is insufficient -- the rotation varies per pixel).

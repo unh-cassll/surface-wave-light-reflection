@@ -38,7 +38,15 @@ import mathutils  # noqa: E402
 
 spec = SceneSpec.from_json(scene_json)
 cb = spec.camera_basis()
-n_water = spec.n_water if spec.n_water > 0 else 1.34
+# render_seapol.py persists the resolved Quan & Fry n into scene.json;
+# refractive_index() then returns it without importing seapol (which is
+# unavailable in Blender's bundled Python)
+try:
+    n_water = spec.refractive_index()
+except ImportError:
+    n_water = 1.34
+    print("scene.json lacks n_water and seapol is unavailable; using 1.34 "
+          "(rerun render_seapol.py to persist the exact n)")
 
 
 # --- clean scene ----------------------------------------------------------
@@ -111,11 +119,16 @@ bg.inputs["Strength"].default_value = float(spec.I_sky)
 # +/-hfov_deg).  Set the focal length explicitly from the sensor width so the
 # FOV is deterministic (cam_data.angle alone proved unreliable here).
 cam_data = bpy.data.cameras.new("cam")
-cam_data.sensor_fit = "HORIZONTAL"
-cam_data.sensor_width = 36.0
-cam_data.lens = (cam_data.sensor_width / 2.0) / float(np.tan(np.deg2rad(spec.hfov_deg)))
+# seapol/Mitsuba apply 2*hfov to the LARGER image axis; fit accordingly
+if cb["W"] >= cb["H"]:
+    cam_data.sensor_fit = "HORIZONTAL"
+    cam_data.sensor_width = 36.0
+else:
+    cam_data.sensor_fit = "VERTICAL"
+    cam_data.sensor_height = 36.0
+cam_data.lens = (36.0 / 2.0) / float(np.tan(np.deg2rad(spec.hfov_deg)))
 print(f"blender camera: lens={cam_data.lens:.1f}mm "
-      f"-> hFOV={np.rad2deg(cam_data.angle_x):.2f} deg "
+      f"-> FOV={np.rad2deg(cam_data.angle):.2f} deg on the larger axis "
       f"(target {2*spec.hfov_deg:.2f} deg)")
 cam_obj = bpy.data.objects.new("cam", cam_data)
 scene.collection.objects.link(cam_obj)
