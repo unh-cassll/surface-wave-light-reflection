@@ -133,9 +133,8 @@ def _isotropic_table(L_u: float, n_water: float = 1.34, n_mu=16, n_phi=24):
 
 def test_isotropic_table_matches_first_order():
     """A uniform unpolarized table reduces to the first-order WaterBody
-    model: identical intensity transfer and identical DoLP (the Q/U
-    split differs only by the meridian rotation the first-order model
-    omits)."""
+    model exactly: both paths run the full transmission chain, so all
+    four Stokes components agree."""
     R_w, E_d = 0.02, np.pi          # L_u = R_w E_d / pi = 0.02
     tab = _isotropic_table(R_w * E_d / np.pi)
     body = WaterBody(reflectance=R_w)
@@ -151,7 +150,7 @@ def test_isotropic_table_matches_first_order():
 
     S_tab = water_leaving_from_table(d_out, n_hat, tab)
     S_fo = water_leaving_stokes(d_out, n_hat, body, E_d)
-    np.testing.assert_allclose(S_tab[..., 0], S_fo[..., 0], rtol=1e-10)
+    np.testing.assert_allclose(S_tab, S_fo, atol=1e-12)
     np.testing.assert_allclose(stokes_dolp(S_tab), stokes_dolp(S_fo),
                                atol=1e-10)
     # vertical view through a level facet: rotation degenerate, exact

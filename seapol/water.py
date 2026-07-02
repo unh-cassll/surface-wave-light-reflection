@@ -34,13 +34,14 @@ retrieval model.
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass, replace
 
 import numpy as np
 
 from .backend import NUMPY_XP, xp_of
-from .polarization import (frame_rotation_angle, fresnel_mueller,
-                           meridian_frame, mueller_rotation, normalize)
+from .polarization import (frame_rotation_angle, meridian_frame,
+                           mueller_rotation, normalize, transmission_chain)
 
 __all__ = ["WaterBody", "WaterOptics", "WaterColumn", "WaterType",
            "WATER_TYPES", "water_leaving_stokes",
@@ -411,6 +412,17 @@ def _ff_model(n_particle: float, mu_junge: float):
         pdf = np.clip(_ff_beta(mu, n_particle, mu_junge, NUMPY_XP), 0.0, None)
         cdf = np.concatenate([[0.0], np.cumsum(
             0.5 * (pdf[1:] + pdf[:-1]) * np.diff(mu))])
+        # analytic sphere integral is 1; the quadrature-resolved fraction
+        # falls short when an O(1) forward spike lies below the grid
+        # resolution (n_particle -> 1 with mu_junge -> 3)
+        resolved = 2.0 * np.pi * cdf[-1]
+        if resolved < 0.95:
+            warnings.warn(
+                f"Fournier-Forand (n={n_particle}, mu_junge={mu_junge}): "
+                f"{1.0 - resolved:.0%} of the scattering sits in a "
+                "sub-resolution forward spike; numerical sphere averages "
+                "of fournier_forand_phase will fall short of 1 by that "
+                "fraction (the MC sampler is unaffected)", stacklevel=2)
         cdf = cdf / cdf[-1]
         _FF_CACHE[key] = (4.0 * np.pi, mu, cdf)
     return _FF_CACHE[key]
@@ -419,8 +431,11 @@ def _ff_model(n_particle: float, mu_junge: float):
 def fournier_forand_phase(cos_theta, n_particle: float = 1.05,
                           mu_junge: float = 3.5):
     """Fournier-Forand phase function P00(cos_theta), normalized so its
-    average over the sphere is 1 (<P00> = 1), matching the Rayleigh/HG
-    convention.
+    average over the sphere is 1 (<P00> = 1) ANALYTICALLY, matching the
+    Rayleigh/HG convention.  For n_particle -> 1 with mu_junge -> 3 an
+    O(1) fraction of that average lives in a delta-like forward spike
+    (theta < ~1e-4 rad); numerical sphere averages then fall short of 1
+    by the spike mass (a warning is emitted when it exceeds 5%).
 
     n_particle : real refractive index of the particles relative to
                  water (~1.02-1.20)
@@ -526,21 +541,15 @@ def water_leaving_stokes(d_out, n_hat, water: WaterBody, E_d=np.pi,
                          n_water: float = 1.34):
     """Water-leaving Stokes contribution (..., 4) along d_out (surface ->
     camera) through facets with upward normals n_hat (first-order
-    isotropic model).
+    isotropic model).  Uses the full transmission chain, so Q/U are in
+    the camera meridian frame (matching the table-based path).
 
     E_d is the downwelling irradiance entering the water; for a uniform
     unpolarized sky of radiance I_sky, E_d = pi I_sky."""
     xp = xp_of(d_out, n_hat)
-    d_out = normalize(xp.asarray(d_out, dtype=float))
-    n_hat = normalize(xp.asarray(n_hat, dtype=float))
-
-    cos_air = xp.clip(xp.sum(d_out * n_hat, axis=-1), 0.0, 1.0)
-    sin_w = xp.sqrt(xp.clip(1.0 - cos_air**2, 0.0, 1.0)) / n_water
-    cos_w = xp.sqrt(xp.clip(1.0 - sin_w**2, 0.0, 1.0))
-
-    _, M_T, _ = fresnel_mueller(cos_w, 1.0 / n_water)
+    M, _, valid = transmission_chain(d_out, n_hat, n_water)
     L_u = water.R_w * E_d / np.pi
-    S_u = xp.zeros(cos_w.shape + (4,))
+    S_u = xp.zeros(M.shape[:-2] + (4,))
     S_u[..., 0] = L_u
-    S = xp.einsum("...ij,...j->...i", M_T, S_u) / n_water**2
-    return xp.where((cos_air > 0.0)[..., None], S, xp.zeros_like(S))
+    S = xp.einsum("...ij,...j->...i", M, S_u)
+    return xp.where(valid[..., None], S, xp.zeros_like(S))
