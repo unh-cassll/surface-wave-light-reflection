@@ -18,6 +18,7 @@ dispatch on the produced arrays, so the pipeline stays on-device.
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -129,8 +130,10 @@ def generate_sea_surface(L: float, N: int, U10: float,
         else:
             beta = default_bound_ramp(K, float(bound_fraction))
         if bound_speed is None:
-            # phase speed at the resolved spectral peak
-            k_pk = abs(float(kx[int(xp.argmax(xp.sum(Psi, axis=0)))]))
+            # phase speed at the resolved spectral peak: 2-D argmax (a
+            # kx-marginal would miss the peak for wind off the x axis)
+            i_pk = int(xp.argmax(Psi))
+            k_pk = float(K.reshape(-1)[i_pk])
             from .spectrum import phase_speed
             bound_speed = float(phase_speed(max(k_pk, dk)))
         # bound waves may ride a spectrum of carriers: bound_speed can be
@@ -169,7 +172,18 @@ def generate_sea_surface(L: float, N: int, U10: float,
             Wj[0, 0] = 0.0
             W_b.append(Wj)
         W = W * xp.sqrt(1.0 - beta)
+        if psi_override is not None and wind_dir_rad != 0.0:
+            warnings.warn(
+                "psi_override is used as-is (not rotated by wind_dir_rad), "
+                "but bound advection follows wind_dir_rad; supply a spectrum "
+                "already rotated to wind_dir_rad or keep wind_dir_rad = 0",
+                stacklevel=2)
         k_par = KX * np.cos(wind_dir_rad) + KY * np.sin(wind_dir_rad)
+        # self-conjugate Nyquist bins cannot carry a complex advection
+        # phase; leave them un-advected to preserve Hermitian symmetry
+        if N % 2 == 0:
+            k_par[N // 2, :] = 0.0
+            k_par[:, N // 2] = 0.0
     else:
         beta = None
         W_b = None
@@ -255,6 +269,14 @@ def generate_sea_surface(L: float, N: int, U10: float,
     sa2, sc2 = cutoff_slope_variances(U10, k_cutoff, fetch_m=fetch_m,
                                       drag_model=drag_model,
                                       lowk_capillary_taper=lowk_capillary_taper)
+    # The FFT corners resolve part of the k > pi/dx annulus; remove that
+    # resolved portion from the sub-grid tail to avoid double counting
+    corner = K > k_cutoff
+    if bool(xp.any(corner)):
+        ka_c = KX * np.cos(wind_dir_rad) + KY * np.sin(wind_dir_rad)
+        kc_c = -KX * np.sin(wind_dir_rad) + KY * np.cos(wind_dir_rad)
+        sa2 = max(sa2 - float(xp.sum((ka_c**2 * Psi)[corner])) * dk * dk, 0.0)
+        sc2 = max(sc2 - float(xp.sum((kc_c**2 * Psi)[corner])) * dk * dk, 0.0)
     var_target = float(xp.sum(Psi)) * dk * dk
     mss_resolved = float(xp.sum(K**2 * Psi)) * dk * dk
     eta0 = eta if eta.ndim == 2 else eta[:, :, 0]
